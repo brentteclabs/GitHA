@@ -1,0 +1,18 @@
+# Requires Frigate integration and Advanced Camera Card (install separately).
+# Replace a security page's cards with one of these card definitions.
+recordings_card:
+  type: custom:advanced-camera-card
+  cameras:
+    - camera_entity: camera.example_front_yard
+  view:
+    default: recording
+  media_viewer:
+    controls:
+      timeline:
+        mode: below
+events_card:
+  type: custom:advanced-camera-card
+  cameras:
+    - camera_entity: camera.example_front_yard
+  view:
+    default: clips

@@ -1,0 +1,103 @@
+# Replace every example entity with your own entity ID.
+title: Commodore 64
+views:
+- title: Home
+  path: home
+  type: panel
+  theme: Commodore 64
+  cards:
+  - type: custom:commodore64-panel
+    title: My Smart Home
+    variant: classic
+    lights:
+    - light.example_living_room
+    - light.example_kitchen
+    - light.example_porch
+    media_entity: media_player.example_speaker
+    weather_entity: weather.example_home
+    camera_entity: camera.example_front_yard
+    power_entity: sensor.example_power
+    energy_entity: sensor.example_energy
+    internet_entity: binary_sensor.example_internet
+    bark_entity: binary_sensor.example_barking
+    bark_level_entity: sensor.example_microphone_level
+    groups:
+    - id: lights
+      title: Lights
+      icon: mdi:lightbulb
+      pages:
+      - id: lighting-fx
+        title: Lighting
+        cards:
+        - type: entities
+          title: Lights
+          entities:
+          - light.example_living_room
+          - light.example_kitchen
+          - light.example_porch
+    - id: security
+      title: Security
+      icon: mdi:cctv
+      pages:
+      - id: recordings
+        title: Cameras
+        cards:
+        - type: picture-entity
+          entity: camera.example_front_yard
+          camera_view: live
+        - type: markdown
+          content: For saved video and a scrubber, install Advanced Camera Card and
+            use the optional example in this package.
+      - id: events
+        title: Event previews
+        cards:
+        - type: markdown
+          content: 'Optional: replace this card with the Advanced Camera Card example
+            to show your own Frigate event thumbnails.'
+      - id: barking
+        title: Bark log
+        cards:
+        - type: logbook
+          entities:
+          - binary_sensor.example_barking
+          hours_to_show: 24
+        - type: markdown
+          content: Requires an existing bark detector. This panel does not create
+            audio detection or logging automations.
+    - id: media
+      title: Media
+      icon: mdi:music
+      pages:
+      - id: media
+        title: Music
+        cards:
+        - type: media-control
+          entity: media_player.example_speaker
+    - id: house
+      title: House
+      icon: mdi:home
+      pages:
+      - id: weather
+        title: Weather
+        cards:
+        - type: weather-forecast
+          entity: weather.example_home
+    - id: systems
+      title: Systems
+      icon: mdi:cog
+      pages:
+      - id: power
+        title: Energy
+        cards:
+        - type: entities
+          title: Energy
+          entities:
+          - sensor.example_power
+          - sensor.example_energy
+      - id: status
+        title: Status
+        cards:
+        - type: entities
+          title: Connection
+          entities:
+          - binary_sensor.example_internet
