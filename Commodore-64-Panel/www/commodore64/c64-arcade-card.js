@@ -1,0 +1,71 @@
+/* Original browser minigames and an opt-in, isolated C64 emulator. */
+class C64ArcadeCard extends HTMLElement {
+ constructor(){super();this.attachShadow({mode:'open'});this.keys=new Set();this.game='snake';this.running=false;this.tick=0;this.last=0;this.score=0;this.visible=()=>{if(document.hidden){this.pause();this.stopEmulator();}};this.blur=()=>{this.keys.clear();this.pause();};}
+ setConfig(c){this.config=c||{};if(!this.ready)this.build();}
+ set hass(h){} // Games never access Home Assistant entities, tokens or services.
+ getCardSize(){return 12;}
+ connectedCallback(){if(!this.ready)this.build();document.addEventListener('visibilitychange',this.visible);window.addEventListener('blur',this.blur);}
+ disconnectedCallback(){this.pause();document.removeEventListener('visibilitychange',this.visible);window.removeEventListener('blur',this.blur);this.stopEmulator();}
+ build(){
+  this.ready=true;
+  this.shadowRoot.innerHTML=`<style>
+  @font-face{font-family:ArcadePixel;src:url('/local/commodore64/c64-pixel.ttf')} :host{display:block;color:#c2b6ff;font:12px/1.7 ArcadePixel,monospace}*{box-sizing:border-box}button,a,select{font:inherit}button,a{color:inherit;background:#211957;border:2px solid #7167a4;padding:10px 14px;border-radius:1px;cursor:pointer;text-decoration:none}button:hover,button:focus-visible,a:hover{border-color:#ffe47c;color:#ffe47c}button.active{background:#453294;border-color:#bcb1ff}button:disabled{opacity:.45;cursor:default}[hidden]{display:none!important}.cabinet{border:5px solid #aaa394;border-top-color:#d2c9b6;border-bottom-color:#655f55;background:#08090d;padding:16px;box-shadow:inset 0 0 0 2px #302d28}.rainbow{height:5px;background:linear-gradient(90deg,#ec6258 0 20%,#eaa452 20% 40%,#ffe97c 40% 60%,#82d367 60% 80%,#8970f1 80%);margin:-16px -16px 16px}h2{font-size:18px;line-height:1.6;margin:0}.intro{font:14px/1.6 monospace;color:#a69bbc;margin:6px 0 16px}.tabs,.toolbar{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}.toolbar{align-items:center}.score{margin-left:auto;color:#ffe47c}.screen{max-width:840px;margin:auto;border:8px solid #4e418b;background:#171041;position:relative}canvas{width:100%;aspect-ratio:3/2;display:block;image-rendering:pixelated;touch-action:none;outline:none}canvas:focus-visible{outline:2px solid #ffe47c;outline-offset:-2px}.status{min-height:30px;color:#e0d8ff;text-align:center;padding:8px;font-size:11px}.directions{font:14px/1.6 monospace;color:#b3a7cb}.pad{display:grid;grid-template-columns:repeat(3,54px);gap:5px;justify-content:center;margin:12px auto;touch-action:none;user-select:none}.pad button{padding:12px 0;touch-action:none}.pad [data-key=ArrowUp]{grid-column:2}.pad [data-key=ArrowLeft]{grid-column:1}.emulator-box{height:min(75vh,750px);min-height:440px;border:3px solid #7264a3;margin-top:12px}.emulator-box iframe{border:0;width:100%;height:100%;background:#171041}.notice{font:14px/1.6 monospace;color:#b8abce;max-width:850px}.fine{font:12px/1.5 monospace;color:#9186aa} @media(max-width:650px){.cabinet{padding:10px}.rainbow{margin:-10px -10px 10px}h2{font-size:14px}.tabs button,.toolbar button{font-size:9px;padding:10px 8px}.score{font-size:9px}.screen{border-width:4px}.status{font-size:9px}.emulator-box{min-height:510px}}
+
+  #start,#load-emulator{display:inline-flex;align-items:center;justify-content:center;min-height:68px;min-width:240px;padding:18px 26px;font-size:18px;font-weight:bold;line-height:1.5;background:#ffe47c;color:#211957;border:4px solid #fff0b3;border-bottom-color:#ae8637;box-shadow:0 4px 0 #654725;letter-spacing:1px}
+  #start:hover,#load-emulator:hover:not(:disabled){background:#fff0ad;color:#171041;border-color:#fff7d5}
+  #start:focus-visible,#load-emulator:focus-visible{outline:3px solid #b6a6ff;outline-offset:4px}
+  #start:active,#load-emulator:active:not(:disabled){transform:translateY(2px);box-shadow:0 2px 0 #654725}
+  @media(max-width:650px){#start,#load-emulator{width:100%;min-width:0;min-height:64px;font-size:16px;padding:16px 12px}}
+  </style><section class="cabinet"><h2>COMMODORE ARCADE</h2><p class="intro">Choose a game. Press START. Have fun.</p><nav class="tabs" aria-label="Games"><button data-game="snake" class="active">SNAKE</button><button data-game="breakout">BREAKOUT</button><button data-game="pong">PONG</button></nav>
+  <div id="native"><div class="toolbar"><button id="start" aria-label="Start or restart game">▶ START / PLAY</button><button id="pause">PAUSE</button><span class="score" aria-live="polite">SCORE <b id="score">0</b></span></div><div class="screen"><canvas width="600" height="400" tabindex="0" aria-label="Arcade game screen. Use mouse, arrow keys or WASD to play."></canvas></div><div class="status" role="status">READY. PRESS START.</div><p class="directions"></p><div class="pad" aria-label="Touch game controls"><button data-key="ArrowUp" aria-label="Up">▲</button><button data-key="ArrowLeft" aria-label="Left">◀</button><button data-key="ArrowDown" aria-label="Down">▼</button><button data-key="ArrowRight" aria-label="Right">▶</button></div><p class="fine">Original C64-inspired browser games. Space pauses. Games pause when this tab loses focus.</p></div>
+</section>`;
+  this.canvas=this.shadowRoot.querySelector('canvas');this.ctx=this.canvas.getContext('2d');
+  this.shadowRoot.querySelectorAll('[data-game]').forEach(b=>b.onclick=()=>this.select(b.dataset.game));
+  this.shadowRoot.querySelector('#start').onclick=()=>{this.reset();this.running=true;this.message('PLAY!');this.canvas.focus({preventScroll:true});this.last=0;this.loopId=requestAnimationFrame(t=>this.frame(t));};
+  this.shadowRoot.querySelector('#pause').onclick=()=>this.togglePause();
+  const controlKey=e=>({w:'ArrowUp',a:'ArrowLeft',s:'ArrowDown',d:'ArrowRight'}[e.key.toLowerCase()]||e.key);
+  this.canvas.addEventListener('keydown',e=>{const k=controlKey(e);if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight',' '].includes(k)){e.preventDefault();if(k===' '){if(!e.repeat)this.togglePause();}else this.input(k);}});
+  this.canvas.addEventListener('keyup',e=>this.keys.delete(controlKey(e)));
+  this.canvas.addEventListener('blur',()=>this.keys.clear());
+  this.shadowRoot.querySelectorAll('[data-key]').forEach(b=>{b.onpointerdown=e=>{e.preventDefault();b.setPointerCapture(e.pointerId);this.input(b.dataset.key);};b.onpointerup=b.onpointercancel=()=>this.keys.delete(b.dataset.key);b.onlostpointercapture=()=>this.keys.delete(b.dataset.key);});
+  const point=e=>{const r=this.canvas.getBoundingClientRect(),x=(e.clientX-r.left)*600/r.width,y=(e.clientY-r.top)*400/r.height;if(this.game==='snake'){if(e.type==='pointermove'&&!e.buttons)return;const dx=x-(this.snake[0][0]*20+10),dy=y-(this.snake[0][1]*20+10);const k=Math.abs(dx)>Math.abs(dy)?(dx<0?'ArrowLeft':'ArrowRight'):(dy<0?'ArrowUp':'ArrowDown');this.input(k);this.keys.delete(k);}else if(this.game==='breakout')this.paddle=Math.max(45,Math.min(555,x));else this.paddle=Math.max(40,Math.min(360,y));if(!this.running)this.draw();};
+  this.canvas.onpointermove=point;
+  this.canvas.onpointerdown=e=>{e.preventDefault();this.canvas.focus({preventScroll:true});this.canvas.setPointerCapture(e.pointerId);point(e);};
+this.select('snake');
+ }
+ message(t){this.shadowRoot.querySelector('.status').textContent=t;}
+ setScore(t){this.shadowRoot.querySelector('#score').textContent=t;}
+ select(game){this.pause();this.stopEmulator();this.game=game;this.shadowRoot.querySelectorAll('[data-game]').forEach(b=>{b.classList.toggle('active',b.dataset.game===game);b.setAttribute('aria-pressed',String(b.dataset.game===game));});this.shadowRoot.querySelector('#native').hidden=game==='c64';if(game==='c64')return;this.reset();this.message('READY. PRESS START.');this.shadowRoot.querySelector('.directions').textContent={snake:'Click or drag toward a direction to steer. Arrow keys / WASD or touch buttons also work. Eat gold pixels; avoid walls and your tail.',breakout:'Move your mouse across the screen to aim the paddle. Left/right arrows, A/D, or touch drag also work. Clear every brick. Three lives.',pong:'Move your mouse vertically over the screen to aim the paddle. Up/down arrows, W/S, or touch drag also work. First to 7 wins.'}[game];}
+ reset(){this.pause();this.over=false;this.shadowRoot.querySelector('#pause').disabled=false;this.score=0;this.lives=3;this.tick=0;this.setScore('0');this.shadowRoot.querySelector('#pause').textContent='PAUSE';if(this.game==='snake'){this.snake=[[9,10],[8,10],[7,10]];this.dir=[1,0];this.next=[1,0];this.turnQueued=false;this.food=this.newFood();}else{this.paddle=this.game==='pong'?200:300;this.ai=200;this.enemyScore=0;this.bricks=Array.from({length:50},(_,i)=>({x:20+(i%10)*56,y:40+Math.floor(i/10)*24,alive:true}));this.serve();}this.draw();}
+ newFood(){const free=[];for(let y=0;y<20;y++)for(let x=0;x<30;x++)if(!this.snake.some(s=>s[0]===x&&s[1]===y))free.push([x,y]);return free.length?free[Math.floor(Math.random()*free.length)]:null;}
+ serve(){this.ball={x:300,y:this.game==='breakout'?290:200,vx:this.game==='pong'?(Math.random()<.5?-210:210):160,vy:this.game==='pong'?130:-190};}
+ input(k){this.keys.add(k);if(this.game==='snake'&&!this.turnQueued){const d={ArrowUp:[0,-1],ArrowDown:[0,1],ArrowLeft:[-1,0],ArrowRight:[1,0]}[k];if(d&&d[0]!==-this.dir[0]&&d[1]!==-this.dir[1]){this.next=d;this.turnQueued=true;}}}
+ pause(){this.running=false;cancelAnimationFrame(this.loopId);this.keys.clear();if(this.ready){this.shadowRoot.querySelector('#pause').textContent='RESUME';}}
+ togglePause(){if(this.over)return;if(this.running){this.pause();this.message('PAUSED');}else{this.running=true;this.last=0;this.message('PLAY!');this.shadowRoot.querySelector('#pause').textContent='PAUSE';this.canvas.focus({preventScroll:true});this.loopId=requestAnimationFrame(t=>this.frame(t));}}
+ end(t){this.pause();this.over=true;this.shadowRoot.querySelector('#pause').disabled=true;this.message(t+' — PRESS START TO PLAY AGAIN.');}
+ frame(t){if(!this.running||!this.isConnected)return;const dt=this.last?Math.min((t-this.last)/1000,.035):0;this.last=t;this.updateGame(dt);this.draw();if(this.running)this.loopId=requestAnimationFrame(v=>this.frame(v));}
+ updateGame(dt){
+  if(this.game==='snake'){this.tick+=dt;if(this.tick<Math.max(.065,.145-this.score*.002))return;this.tick=0;this.dir=this.next;this.turnQueued=false;const head=[this.snake[0][0]+this.dir[0],this.snake[0][1]+this.dir[1]],eat=head[0]===this.food[0]&&head[1]===this.food[1],body=eat?this.snake:this.snake.slice(0,-1);if(head[0]<0||head[0]>=30||head[1]<0||head[1]>=20||body.some(s=>s[0]===head[0]&&s[1]===head[1])){this.end('GAME OVER');return;}this.snake.unshift(head);if(eat){this.score++;this.setScore(this.score);this.food=this.newFood();if(!this.food)this.end('YOU WIN');}else this.snake.pop();return;}
+  const b=this.ball;
+  if(this.game==='breakout'){
+   this.paddle=Math.max(45,Math.min(555,this.paddle+((this.keys.has('ArrowRight')?1:0)-(this.keys.has('ArrowLeft')?1:0))*400*dt));
+   const oldY=b.y;b.x+=b.vx*dt;b.y+=b.vy*dt;if(b.x<6||b.x>594){b.x=Math.max(6,Math.min(594,b.x));b.vx*=-1;}if(b.y<6){b.y=6;b.vy=Math.abs(b.vy);}
+   if(b.vy>0&&oldY<=354&&b.y>=354&&Math.abs(b.x-this.paddle)<51){b.y=353;b.vy=-Math.abs(b.vy);b.vx=(b.x-this.paddle)*5;}
+   for(const brick of this.bricks){if(brick.alive&&b.x+6>brick.x&&b.x-6<brick.x+50&&b.y+6>brick.y&&b.y-6<brick.y+17){brick.alive=false;b.vy*=-1;this.score+=10;this.setScore(this.score+' · '+this.lives+' LIVES');if(this.bricks.every(v=>!v.alive))this.end('ALL BRICKS CLEARED');break;}}
+   if(b.y>410){this.lives--;this.setScore(this.score+' · '+this.lives+' LIVES');if(this.lives===0)this.end('GAME OVER');else{this.serve();this.setScore(this.score+' · '+this.lives+' LIVES');}}return;
+  }
+  this.paddle=Math.max(40,Math.min(360,this.paddle+((this.keys.has('ArrowDown')?1:0)-(this.keys.has('ArrowUp')?1:0))*320*dt));this.ai+=Math.sign(b.y-this.ai)*Math.min(Math.abs(b.y-this.ai),155*dt);this.ai=Math.max(40,Math.min(360,this.ai));b.x+=b.vx*dt;b.y+=b.vy*dt;
+  if(b.y<6||b.y>394){b.y=Math.max(6,Math.min(394,b.y));b.vy*=-1;}
+  if(b.vx<0&&b.x<=32&&b.x>=15&&Math.abs(b.y-this.paddle)<46){b.x=32;b.vx=Math.min(360,Math.abs(b.vx)+12);b.vy=(b.y-this.paddle)*5;}
+  if(b.vx>0&&b.x>=568&&b.x<=585&&Math.abs(b.y-this.ai)<46){b.x=568;b.vx=-Math.min(360,Math.abs(b.vx)+12);b.vy=(b.y-this.ai)*5;}
+  if(b.x<0||b.x>600){if(b.x>600)this.score++;else this.enemyScore++;this.setScore(this.score+' : '+this.enemyScore);if(this.score===7||this.enemyScore===7)this.end(this.score===7?'YOU WIN':'COMPUTER WINS');else this.serve();}
+ }
+ draw(){const c=this.ctx;c.fillStyle='#211766';c.fillRect(0,0,600,400);c.strokeStyle='#322878';for(let x=0;x<600;x+=20){c.beginPath();c.moveTo(x,0);c.lineTo(x,400);c.stroke();}for(let y=0;y<400;y+=20){c.beginPath();c.moveTo(0,y);c.lineTo(600,y);c.stroke();}
+  if(this.game==='snake'){this.snake.forEach((s,i)=>{c.fillStyle=i?'#9282ed':'#c8bbff';c.fillRect(s[0]*20+2,s[1]*20+2,16,16);});if(this.food){c.fillStyle='#ffe47c';c.fillRect(this.food[0]*20+4,this.food[1]*20+4,12,12);}return;}
+  if(this.game==='breakout'){this.bricks.forEach((b,i)=>{if(b.alive){c.fillStyle=['#ed6562','#eea55a','#edda77','#91d279','#8e85ef'][Math.floor(i/10)];c.fillRect(b.x,b.y,50,17);}});c.fillStyle='#b4a4ff';c.fillRect(this.paddle-45,360,90,12);}else{c.fillStyle='#8b7acd';for(let y=0;y<400;y+=25)c.fillRect(298,y,4,12);c.fillStyle='#b9aaff';c.fillRect(20,this.paddle-40,10,80);c.fillStyle='#eea55a';c.fillRect(570,this.ai-40,10,80);}c.fillStyle='#ffe47c';c.fillRect(this.ball.x-5,this.ball.y-5,10,10);
+ }
+ stopEmulator(){}
+
+}
+if(!customElements.get('c64-arcade-card'))customElements.define('c64-arcade-card',C64ArcadeCard);
+window.customCards=window.customCards||[];window.customCards.push({type:'c64-arcade-card',name:'Commodore Arcade',description:'Original Snake, Breakout and Pong browser games'});

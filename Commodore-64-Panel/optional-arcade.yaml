@@ -1,0 +1,9 @@
+id: arcade
+title: Arcade
+icon: mdi:controller-classic
+pages:
+- id: games
+  title: Games
+  wide: true
+  cards:
+  - type: custom:c64-arcade-card

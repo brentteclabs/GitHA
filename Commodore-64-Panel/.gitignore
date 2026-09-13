@@ -1,0 +1,14 @@
+# Local/private installation material
+secrets.yaml
+*.clixml
+.env
+.env.*
+*.crt
+*.d64
+*.t64
+*.tap
+*.prg
+*.bin
+*.zip
+c64-games/
+__pycache__/

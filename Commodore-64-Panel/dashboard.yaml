@@ -1,4 +1,3 @@
-# Replace every example entity with your own entity ID.
 title: Commodore 64
 views:
 - title: Home
@@ -19,8 +18,6 @@ views:
     power_entity: sensor.example_power
     energy_entity: sensor.example_energy
     internet_entity: binary_sensor.example_internet
-    bark_entity: binary_sensor.example_barking
-    bark_level_entity: sensor.example_microphone_level
     groups:
     - id: lights
       title: Lights
@@ -54,16 +51,6 @@ views:
         - type: markdown
           content: 'Optional: replace this card with the Advanced Camera Card example
             to show your own Frigate event thumbnails.'
-      - id: barking
-        title: Bark log
-        cards:
-        - type: logbook
-          entities:
-          - binary_sensor.example_barking
-          hours_to_show: 24
-        - type: markdown
-          content: Requires an existing bark detector. This panel does not create
-            audio detection or logging automations.
     - id: media
       title: Media
       icon: mdi:music
@@ -101,3 +88,7 @@ views:
           title: Connection
           entities:
           - binary_sensor.example_internet
+    cpu_entity: sensor.example_cpu_usage
+    ram_entity: sensor.example_ram_usage
+    cpu_specs: YOUR CPU MODEL / CORES / CLOCK
+    ram_specs: YOUR INSTALLED RAM

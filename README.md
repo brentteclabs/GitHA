@@ -1,2 +1,0 @@
-# GitHA
-Home Assistant Themes
