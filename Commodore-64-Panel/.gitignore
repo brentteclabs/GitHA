@@ -10,5 +10,6 @@ secrets.yaml
 *.prg
 *.bin
 *.zip
-c64-games/
+c64-games/*
+!c64-games/catalog.json
 __pycache__/

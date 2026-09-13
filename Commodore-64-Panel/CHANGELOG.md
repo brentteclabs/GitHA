@@ -1,3 +1,12 @@
+# Release notes — 2026-09-13
+
+- Added optional EmulatorJS / VICE library with an empty game catalog.
+- Keep the mouse cursor visible and disallow pointer locking.
+- Added Fullscreen / Exit Fullscreen and Release Controls buttons.
+- Escape exits fullscreen and releases game input; click the game to resume.
+- Documented private game installation and temporary save behavior.
+- Retained unbranded artwork, demonstration screenshots, and original Commodore styling.
+
 # Release notes — 2026-09-12
 
 - Refreshed standalone GitHub package using the original Commodore styling.

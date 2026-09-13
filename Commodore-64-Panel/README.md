@@ -14,6 +14,7 @@ A Commodore 64-inspired dashboard for Home Assistant: a blue BASIC-style welcome
 - Subsections with standard Home Assistant cards.
 - Optional Frigate recordings, timeline review, and event thumbnails through Advanced Camera Card.
 - Optional original Snake, Breakout, and Pong games with mouse, keyboard, and touch controls.
+- Optional C64 emulator library with visible mouse cursor, Fullscreen, and Escape / Release Controls.
 - Local font and artwork; the base panel and included minigames need no external CDN.
 
 The original Commodore look is retained, without rainbow strips across card headers. The familiar stripes remain in the Commodore branding and artwork.
@@ -25,7 +26,10 @@ The original Commodore look is retained, without rainbow strips across card head
 | `dashboard.yaml` | Full example dashboard; replace every `example` entity |
 | `themes/commodore64.yaml` | Home Assistant colour theme |
 | `www/commodore64/commodore64-panel.js` | Overview and subsection renderer |
-| `www/commodore64/c64-arcade-card.js` | Optional original browser minigames |
+| `www/commodore64/c64-arcade-card.js` | Optional browser minigames and emulator library launcher |
+| `www/commodore64/c64-library.html` | Isolated EmulatorJS player; empty private game catalog |
+| `www/commodore64/c64-player-controls.js` | Readable source for controls embedded in the library |
+| `docs/EMULATOR.md` | Private game setup, fullscreen and input controls |
 | `optional-arcade.yaml` | Arcade group to add to the dashboard |
 | `optional-frigate-card.yaml` | Optional camera review examples |
 | `docs/CONFIGURATION.md` | Field reference and customization notes |
@@ -34,7 +38,7 @@ The original Commodore look is retained, without rainbow strips across card head
 | `screenshots/` | Desktop and Arcade previews |
 | `FONT-LICENSE.txt` | Press Start 2P font attribution and licence |
 
-No personal entity inventory, login tokens, camera footage, bark detection, game ROM collection, BIOS files, or bundled third-party emulator is included. The optional Arcade contains three original browser games. Cartridge libraries used in a private installation are separate from this GitHub package.
+No personal entity inventory, login tokens, camera footage, bark detection, game ROM collection, BIOS files, or bundled third-party emulator is included. The optional Arcade contains three original browser games and an emulator launcher. The emulator runtime downloads from the official EmulatorJS CDN when used. Its game catalog is empty; add games privately using [the emulator guide](docs/EMULATOR.md).
 
 ## Requirements
 
@@ -78,7 +82,7 @@ Keep the supplied group/page IDs when changing their display names: overview but
 
 ## Add the optional Arcade
 
-1. Add `/local/commodore64/c64-arcade-card.js?v=github1` as another **JavaScript Module** resource.
+1. Add `/local/commodore64/c64-arcade-card.js?v=github2` as another **JavaScript Module** resource.
 2. Copy the object in `optional-arcade.yaml` as an additional item in the main card's `groups` list. Indent it consistently with the existing Lights and Security groups.
 3. Refresh and open **Arcade → Games**.
 
@@ -91,6 +95,14 @@ Keep the supplied group/page IDs when changing their display names: overview but
 | Pong | Move vertically over the screen | Up/down or W/S |
 
 Press the large gold **START / PLAY** button. Space pauses. Games pause when the tab loses focus and stop when the card is removed. They run on the viewing device, not as a process on the Home Assistant server.
+
+### Optional C64 emulator
+
+ROM collection: [Commodore 64 ROM Set (US) on Internet Archive](https://archive.org/details/commodore-64-romset-us). Game files are downloaded separately and are not bundled in this repository.
+
+Choose **C64 EMULATOR → OPEN GAME LIBRARY**. Follow [Emulator setup](docs/EMULATOR.md) to add your own games. The mouse stays visible. Use **FULLSCREEN** to enlarge the player; **Esc** exits fullscreen and releases controls. **RELEASE CONTROLS** frees keyboard input, and clicking the game resumes it.
+
+The Arcade screenshot above shows the original minigames; the emulator controls are an additional feature.
 
 ## Optional security video
 
