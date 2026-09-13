@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<metadata>
+  <identifier>commodore-64-romset-us</identifier>
+  <mediatype>software</mediatype>
+  <collection>softwarecapsules_commodore</collection>
+  <creator>Commodore</creator>
+  <date>1982</date>
+  <description>&lt;span style="color:rgb(44,44,44);font-family:'Helvetica Neue', Helvetica, Arial, sans-serif;font-size:14px;background-color:rgb(255,255,255);"&gt;All USA Releases for Commodore 64&lt;/span&gt;</description>
+  <language>eng</language>
+  <scanner>Internet Archive HTML5 Uploader 1.6.4</scanner>
+  <subject>rom</subject>
+  <subject>roms</subject>
+  <subject>rom set</subject>
+  <subject>commodore</subject>
+  <subject>commodore 64</subject>
+  <subject>c64</subject>
+  <subject>commodore64</subject>
+  <subject>lakka</subject>
+  <subject>libretro</subject>
+  <subject>retroarch</subject>
+  <subject>recalbox</subject>
+  <subject>retropie</subject>
+  <title>Commodore 64 Romset (USA)</title>
+  <uploader>dyronluigi@gmail.com</uploader>
+  <publicdate>2021-01-03 23:34:40</publicdate>
+  <addeddate>2021-01-03 23:34:40</addeddate>
+  <curation>[curator]validator@archive.org[/curator][date]20210104003742[/date][comment]checked for malware[/comment]</curation>
+  <collection>softwarecapsules</collection>
+</metadata>
