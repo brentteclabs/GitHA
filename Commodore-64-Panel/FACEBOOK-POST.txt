@@ -1,1 +1,0 @@
-My Commodore 64 Home Assistant dashboard package is ready for GitHub: setup instructions, screenshots, optional camera-review examples, and optional Snake, Breakout and Pong. Replace the example entities with your own. Repository link: [ADD YOUR GITHUB LINK].
