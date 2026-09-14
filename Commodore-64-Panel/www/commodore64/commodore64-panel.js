@@ -1,6 +1,6 @@
 function autoPanelConfig(raw,hass){
  raw=applyPanelPreferences(raw,hass);
- const c={title:'My Smart Home',...raw};
+ const c={title:'My Smart Home',...raw};if(c.groups)c.groups=JSON.parse(JSON.stringify(c.groups));
  const states=Object.values(hass.states||{}).filter(s=>!s.attributes?.hidden);
  const domain=d=>states.filter(s=>s.entity_id.startsWith(d+'.')).sort((a,b)=>a.entity_id.localeCompare(b.entity_id));
  const first=d=>domain(d).find(s=>!['unknown','unavailable'].includes(s.state))?.entity_id||domain(d)[0]?.entity_id;
@@ -58,7 +58,7 @@ class Commodore64Panel extends HTMLElement {
    <div class="layout"><aside class="bezel rail"><nav aria-label="Main sections"><button data-route="home" class="nav">${this.icon('mdi:home')}<span>Dashboard</span></button>${this.config.groups.map(g=>`<button class="nav" data-route="${g.id}/${g.pages[0].id}">${this.icon(g.icon)}<span>${esc(g.title)}</span></button>`).join('')}</nav><div class="rail-bottom"><div class="disk">▣</div>LOAD<br>"GOOD VIBES"<br><br>READY.<span class="cursor">_</span></div><a class="settings" href="/config/dashboard">${this.icon('mdi:cog')} HA SETTINGS</a></aside>
    <main><div id="home"></div><section id="detail" hidden><div class="bezel section-head"><h1 id="section-title"></h1><div id="tabs" role="tablist"></div></div><div id="native"></div></section></main></div>
    <footer class="bezel"><i class="rainbow"></i><span>COMMODORE 64 <em>|</em> ${this.moon?'SMART HOME':'MY SMART HOME'} <em>|</em> SAME OLD TECH. A BRIGHTER TOMORROW.</span><i class="rainbow"></i><span>READY._</span></footer><div id="message" role="status" hidden></div></div>`;
-  this.shadowRoot.onclick=e=>this.click(e);this.renderPage();this.checkRecording();
+  if(!this.panelClick){this.panelClick=e=>this.click(e);this.shadowRoot.addEventListener('click',this.panelClick);}this.renderPage();this.checkRecording();
  }
  async checkRecording(){
   if(!this.config.frigate?.camera||!this._hass?.callWS||this.checkPending||Date.now()-(this.lastRecordCheck||0)<60000)return;
@@ -67,7 +67,7 @@ class Commodore64Panel extends HTMLElement {
  }
  async click(e){
   const button=e.target.closest('[data-route],[data-entity],[data-service],[data-all-off]');if(!button)return;
-  if(button.dataset.route){location.hash=button.dataset.route;return;}
+  if(button.dataset.route){const route=button.dataset.route;const [groupId,pageId]=route.split('/');if(route!=='home'&&!this.config.groups.some(g=>g.id===groupId&&g.pages.some(p=>p.id===pageId))){const box=this.shadowRoot.querySelector('#message');box.hidden=false;box.textContent='This section is not configured: '+route;setTimeout(()=>box.hidden=true,5000);return;}location.hash=route;this.renderPage();return;}
   if(button.dataset.entity){this.dispatchEvent(new CustomEvent('hass-more-info',{detail:{entityId:button.dataset.entity},bubbles:true,composed:true}));return;}
   button.disabled=true;
   try{
@@ -109,13 +109,13 @@ class Commodore64Panel extends HTMLElement {
   const media=`<div class="media-body"><div class="album">${pa.entity_picture?`<img src="${esc(pa.entity_picture)}" alt="Album artwork">`:`<b>COMMODORE<br>64</b><i class="rainbow"></i>`}</div><div class="track"><span class="muted">${playing?'Now playing:':'Music ready'}</span><p>${esc(pa.media_title|| (this.moon?'LUNA':'SMART HOME'))}</p><span>${esc(pa.media_artist||'Choose your soundtrack')}</span></div></div><div class="progress"><span style="width:${duration?Math.min(100,pos/duration*100):0}%"></span></div><div class="transport">${[['media_previous_track','mdi:skip-previous','Previous'],['media_play_pause',playing?'mdi:pause':'mdi:play','Play / pause'],['media_next_track','mdi:skip-next','Next']].map(([s,i,l])=>`<button aria-label="${l}" data-service="media_player.${s}" data-target="${this.config.media_entity}" ${this.good(this.config.media_entity)?'':'disabled'}>${this.icon(i)}</button>`).join('')}</div>`;
   const camera=this.state(this.config.camera_entity);const cameraImage=camera?.attributes.entity_picture;
   const cameraBody=`<button class="camera" data-route="security/recordings" aria-label="Open security recording scrubber">${cameraImage?`<img src="${esc(cameraImage)}" alt="Latest front yard camera image">`:`<span>${this.icon('mdi:cctv')}<br>OPEN CAMERA</span>`}</button><div class="camera-caption"><span>FRONT YARD</span><span class="${this.recordHealthy?'green':'amber'}">● ${this.recordHealthy?'RECORDING':this.recordHealthy===false?'NO RECENT VIDEO':this.config.frigate?.camera?'CHECKING':'NOT CONFIGURED'}</span></div><div class="camera-actions"><button data-route="security/recordings">SCRUB VIDEO</button><button data-route="security/events">EVENT PREVIEWS</button></div>`;
-  const power=this.state(this.config.power_entity),energy=this.state(this.config.energy_entity),watts=Number(power?.state),hasPower=this.good(this.config.power_entity);
+  const power=this.state(this.config.power_entity),energy=this.state(this.config.energy_entity),watts=Number(power?.state),hasPower=this.good(this.config.power_entity)&&power.state.trim()!==''&&Number.isFinite(watts);
   const powerBody=`<div class="metric-label">CURRENT USE</div><div class="big">${hasPower?watts.toFixed(1):'—'}<small> ${esc(power?.attributes.unit_of_measurement||'')}</small></div><div class="bars" aria-hidden="true">${Array.from({length:16},(_,i)=>`<i style="height:${15+i*4}px;background:hsl(${270-i*18},85%,60%);opacity:${hasPower&&i<Math.max(1,watts/150)?.95:.22}"></i>`).join('')}</div><div class="kv"><span>Meter total</span><span>${this.good(this.config.energy_entity)?esc(energy.state)+' '+esc(energy.attributes.unit_of_measurement||''):'—'}</span></div><button class="outline" data-route="${this.moon?'house/weather':'systems/power'}">${this.moon?'WEATHER & HOME':'POWER CONTROLS'} →</button>`;
   const statusRows=[['Home Assistant',this._hass.connected!==false],['Internet',this.state(this.config.internet_entity)?.state==='on'],['Camera recorder',this.recordHealthy]];
   const statusBody=`<div class="status-list">${statusRows.map(([name,ok])=>`<div><i class="dot ${ok?'good':'warn'}"></i><span>${name}</span><span class="${ok?'green':'amber'}">${ok?'ONLINE':'CHECK'}</span></div>`).join('')}</div><button class="outline" data-route="security/recordings">SECURITY VIDEO →</button>`;
-  const fresh=document.createElement('div');fresh.id='home';fresh.innerHTML=`<div class="welcome-row"><section class="bezel hero"><div class="hero-text">**** COMMODORE 64 BASIC V2 ****<br><br><span class="memory">HOME ASSISTANT CPU ${cpuText} &nbsp; RAM ${ramText}<br><span class="hardware-specs">${esc(this.config.cpu_specs || "CPU SPECS UNAVAILABLE")}<br>${esc(this.config.ram_specs || "RAM SPECS UNAVAILABLE")}</span></span><p>READY.<br>HOME ASSISTANT LOADED.<br>${this.moon?'SMART HOME':'MY SMART HOME'} ONLINE.<br>_</p></div></section><section class="bezel clock"><div>${date}</div><strong>${this.config.overview_arcade?time.replace(/\s*(AM|PM)$/i,'<small>$1</small>'):time}</strong><p>${this.moon?'A LITTLE<br>MOON MAGIC.':'READY FOR<br>A BRIGHTER<br>TOMORROW.'}</p><span>_</span></section></div><div class="overview-grid">
+  const fresh=document.createElement('div');fresh.id='home';fresh.innerHTML=`<div class="welcome-row"><section class="bezel hero"><div class="hero-text">**** COMMODORE 64 BASIC V2 ****<br><br><span class="memory">HOME ASSISTANT CPU ${cpuText} &nbsp; RAM ${ramText}<br><span class="hardware-specs">${esc(this.config.cpu_specs || "CPU SPECS UNAVAILABLE")}<br>${esc(this.config.ram_specs || "RAM SPECS UNAVAILABLE")}</span></span><p>READY.<br>HOME ASSISTANT LOADED.<br>${this.moon?'SMART HOME':'MY SMART HOME'} ONLINE.<br>_</p></div></section><section class="bezel clock"><div>${date}</div><strong>${c64ClockMarkup(now)}</strong><p>${this.moon?'A LITTLE<br>MOON MAGIC.':'READY FOR<br>A BRIGHTER<br>TOMORROW.'}</p><span>_</span></section></div><div class="overview-grid">
    ${this.frame('LIGHTS','mdi:lightbulb-on',`<button class="all-off" data-all-off>ALL OFF</button>${lightRows}`,lightRoute)}
-   ${this.frame('WEATHER','mdi:thermometer',`<div class="metric-label">Outside</div><div class="big temperature">${temp}</div><div class="weather-summary">${this.icon('mdi:weather-partly-cloudy')}<span>${esc(weather?.state?.replaceAll('-',' ')||'Unavailable')}</span></div><div class="kv"><span>Humidity</span><span>${a.humidity!==undefined?esc(a.humidity)+'%':'—'}</span></div><button class="outline" data-route="house/weather">FORECAST →</button>`,'house/weather')}
+   ${this.frame('WEATHER','mdi:thermometer',`<div class="weather-layout">${c64WeatherArt(weather?.state,c64SkyPhase(this._hass))}<div class="weather-readings"><div class="metric-label">Outside</div><div class="big temperature">${temp}</div><div class="weather-condition">${esc(weather?.state?.replaceAll('-',' ')||'Unavailable')}</div><div class="kv"><span>Humidity</span><span>${a.humidity!==undefined?esc(a.humidity)+'%':'—'}</span></div></div></div><button class="outline" data-route="house/weather">FORECAST →</button>`,'house/weather','weather-tile')}
    ${this.frame('MEDIA','mdi:music',media,this.moon?'media/luna':'media/media')}
    ${this.frame('CAMERAS','mdi:cctv',cameraBody,'security/recordings','camera-tile')}
    ${this.frame('ENERGY','mdi:chart-bar',powerBody,this.moon?'house/weather':'systems/power')}
@@ -159,6 +159,13 @@ class Commodore64Panel extends HTMLElement {
  @media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}}
  `;
 }
+function validatePanelImport(data,states){
+ if(!data||data.format!=='commodore-panel-preferences'||data.version!==1||!data.preferences||typeof data.preferences!=='object')throw Error('Choose a Commodore panel preferences export (version 1).');
+ const p=data.preferences;if(typeof p.title!=='string'||!p.title.trim()||p.title.length>60||!/^#[0-9a-f]{6}$/i.test(p.accent)||!['compact','spacious'].includes(p.density)||typeof p.crt!=='boolean'||!Array.isArray(p.favourites)||p.favourites.length>24||p.favourites.some(x=>typeof x!=='string'))throw Error('The preference file contains invalid settings.');
+ const result={title:p.title.trim(),accent:p.accent,density:p.density,crt:p.crt,favourites:[...new Set(p.favourites)].filter(id=>states[id])};
+ for(const [key,domain] of [['weather_entity','weather'],['camera_entity','camera'],['media_entity','media_player']]){const id=p[key];if(id!==undefined&&typeof id!=='string')throw Error('Invalid device selection.');result[key]=id&&id.startsWith(domain+'.')&&states[id]?id:'';}
+ return result;
+}
 function panelPreferenceKey(raw,h){return 'c64-panel-v1:'+location.pathname+':'+(h.user?.id||'local')+':'+(raw.title||'default');}
 function readPanelPreferences(raw,h){try{return JSON.parse(localStorage.getItem(panelPreferenceKey(raw,h))||'null');}catch{return null;}}
 function applyPanelPreferences(raw,h){
@@ -199,7 +206,18 @@ function installPanelPreferences(C){
    try{localStorage.setItem(panelPreferenceKey(this.rawConfig||{},this._hass),JSON.stringify(p));}catch{d.querySelector('.save-status').textContent='Browser storage is unavailable. Enable site storage to save preferences.';return;}
    d.close();this.config=autoPanelConfig(this.rawConfig||{},this._hass);this.build();root.querySelector('.appearance-button').focus();
   };
-  d.showModal();form.elements.title.focus();
+  const preview=document.createElement('section');preview.className='preference-preview';preview.setAttribute('aria-label','Appearance preview');form.querySelector('h2').after(preview);
+  const draft=()=>{const p={title:form.elements.title.value.trim(),accent:form.elements.accent.value,density:form.elements.density.value,crt:form.elements.crt.checked,favourites:[...form.querySelectorAll('[name=favourite]:checked')].map(x=>x.value)};for(const key of ['weather_entity','camera_entity','media_entity'])p[key]=form.elements[key].value;return p;};
+  const showPreview=()=>{const p=draft();preview.style.cssText='padding:'+(p.density==='compact'?10:20)+'px;border:5px ridge #aaa493;background:#241b92;color:'+p.accent+';margin:12px 0;'+(p.crt?'text-shadow:0 0 5px '+p.accent+';background-image:repeating-linear-gradient(transparent 0 3px,#0002 3px 4px);':'');preview.replaceChildren();const title=document.createElement('strong');title.textContent=p.title||'MY SMART HOME';const caption=document.createElement('div');caption.textContent='APPEARANCE PREVIEW · '+p.density.toUpperCase()+' · '+p.favourites.length+'/24 FAVOURITES';preview.append(title,caption);};
+  form.addEventListener('input',showPreview);form.addEventListener('change',showPreview);
+  const applyDraft=p=>{for(const key of ['title','accent','density','weather_entity','camera_entity','media_entity'])form.elements[key].value=p[key]||'';form.elements.crt.checked=p.crt===true;for(const box of form.querySelectorAll('[name=favourite]'))box.checked=(p.favourites||[]).includes(box.value);showPreview();};
+  const tools=document.createElement('div');tools.className='preference-actions';tools.style.flexWrap='wrap';tools.innerHTML='<button type="button" class="export-prefs">EXPORT</button><button type="button" class="import-prefs">IMPORT</button><button type="button" class="reset-prefs">RESET DRAFT</button><input type="file" accept=".json,application/json" hidden aria-label="Import panel preferences">';form.querySelector('.preference-actions').before(tools);
+  const status=d.querySelector('.save-status');
+  tools.querySelector('.export-prefs').onclick=()=>{try{const p=validatePanelImport({format:'commodore-panel-preferences',version:1,preferences:draft()},this._hass.states);const url=URL.createObjectURL(new Blob([JSON.stringify({format:'commodore-panel-preferences',version:1,preferences:p},null,2)],{type:'application/json'}));const a=document.createElement('a');a.href=url;a.download='commodore-panel-preferences.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);status.textContent='Exported this draft. It includes device IDs but no login credentials.';}catch(e){status.textContent=e.message;}};
+  const file=tools.querySelector('[type=file]');tools.querySelector('.import-prefs').onclick=()=>file.click();
+  file.onchange=async()=>{try{const f=file.files[0];if(!f)return;if(f.size>65536)throw Error('Preference files must be smaller than 64 KB.');const p=validatePanelImport(JSON.parse(await f.text()),this._hass.states);applyDraft(p);status.textContent='Imported into preview. Missing devices were skipped. Press Save to apply.';}catch(e){status.textContent='Import failed: '+e.message;}finally{file.value='';}};
+  tools.querySelector('.reset-prefs').onclick=()=>{const raw=this.rawConfig||{};applyDraft({title:raw.title||'My Smart Home',accent:raw.accent||'#a29aff',density:raw.density||'spacious',crt:raw.crt===true,favourites:raw.favourites||[],weather_entity:raw.weather_entity||'',camera_entity:raw.camera_entity||'',media_entity:raw.media_entity||''});status.textContent='Draft reset to dashboard defaults. Press Save to apply, or Cancel to keep your settings.';};
+  showPreview();d.showModal();form.elements.title.focus();
  };
  C.css+=`
  :host{--primary-color:var(--c64-accent);--accent-color:var(--c64-accent);--mdc-theme-primary:var(--c64-accent);--ha-card-border-color:#aaa493;--ha-card-border-width:3px;--ha-card-border-radius:3px;--ha-card-background:#111044;--card-background-color:#111044;--mdc-slider-handle-color:var(--c64-accent);--mdc-slider-active-track-color:var(--c64-accent)}
@@ -212,5 +230,106 @@ function installPanelPreferences(C){
 }
 
 installPanelPreferences(Commodore64Panel);
+function c64DeviceHealth(states){
+ const supported=/^(light|switch|climate|media_player|fan|cover|lock|vacuum|camera|binary_sensor|sensor)\./;
+ const all=Object.values(states).filter(s=>supported.test(s.entity_id));
+ const unavailable=all.filter(s=>s.state==='unavailable');
+ const unknown=all.filter(s=>s.state==='unknown');
+ const batteries=all.filter(s=>s.attributes.device_class==='battery'&&((s.entity_id.startsWith('binary_sensor.')&&s.state==='on')||(s.attributes.unit_of_measurement==='%'&&s.state.trim()!==''&&Number.isFinite(Number(s.state))&&Number(s.state)<=20)));
+ const open=all.filter(s=>s.entity_id.startsWith('binary_sensor.')&&['door','window','garage_door','opening'].includes(s.attributes.device_class)&&s.state==='on');
+ const lights=all.filter(s=>s.entity_id.startsWith('light.')&&s.state==='on');
+ return {unavailable,unknown,batteries,open,lights};
+}
+function c64RoomCards(states){return states.map(s=>({type:s.entity_id.startsWith('light.')?'light':s.entity_id.startsWith('climate.')?'thermostat':s.entity_id.startsWith('media_player.')?'media-control':'tile',entity:s.entity_id}));}
+function installRoomTools(C){
+ const originalUpdate=C.prototype.update;
+ C.prototype.update=function(){originalUpdate.call(this);if(!this._hass||!this.built)return;
+  if(!this.roomsRequested&&this._hass.callWS){this.roomsRequested=true;this.loadRooms();}
+  if(this.active==='home'){
+   const list=this.shadowRoot.querySelector('#home .status-list');if(list){
+    const h=c64DeviceHealth(this.visibleDeviceStates());
+    const internetId=this.config.internet_entity;
+    const connection=this._hass.connected===true?'CONNECTED':this._hass.connected===false?'DISCONNECTED':'UNKNOWN';
+    const internet=internetId?this.state(internetId)?.state:undefined;
+    const rows=[['Home Assistant',connection,connection==='CONNECTED'],['Internet',!internetId?'NOT CONFIGURED':internet==='on'?'ONLINE':internet==='off'?'OFFLINE':'UNAVAILABLE',internet==='on'],['Unavailable devices',String(h.unavailable.length),h.unavailable.length===0],['Unknown states',String(h.unknown.length),h.unknown.length===0],['Low batteries',String(h.batteries.length),h.batteries.length===0],['Open doors / windows',String(h.open.length),h.open.length===0],['Lights on',String(h.lights.length),true]];
+    const fresh=list.cloneNode(false);fresh.innerHTML=rows.map(([label,value,good])=>'<div><i class="dot '+(good?'good':'warn')+'"></i><span>'+esc(label)+'</span><span>'+esc(value)+'</span></div>').join('')+'<button class="outline" data-route="device-health/attention">DEVICE DETAILS →</button>';reconcile(list,fresh);
+   }
+  }
+  this.refreshHealth();
+ };
+ C.prototype.visibleDeviceStates=function(){return Object.fromEntries(Object.entries(this._hass.states).filter(([id])=>!this.excludedEntities?.has(id)));};
+ C.prototype.refreshHealth=function(){
+  if(!this.config?.groups)return;const h=c64DeviceHealth(this.visibleDeviceStates());
+  const cards=Object.entries({unavailable:'Unavailable devices',unknown:'Unknown states',batteries:'Low batteries',open:'Open doors and windows',lights:'Lights currently on'}).map(([key,title])=>h[key].length?{type:'entities',title,show_header_toggle:false,entities:h[key].map(s=>s.entity_id)}:{type:'markdown',content:'**'+title+'** — none.'});
+  const signature=JSON.stringify(cards);if(signature===this.healthSignature)return;this.healthSignature=signature;
+  let group=this.config.groups.find(g=>g.id==='device-health');if(!group){group={id:'device-health',title:'Device health',icon:'mdi:heart-pulse',pages:[{id:'attention',title:'Attention',cards}]};this.config.groups.push(group);this.addRoomNavigation(group);}else group.pages[0].cards=cards;
+  if(this.active==='device-health')this.renderPage();
+ };
+ C.prototype.addRoomNavigation=function(group){const nav=this.shadowRoot.querySelector('nav');if(!nav||nav.querySelector('[data-route="'+group.id+'/'+group.pages[0].id+'"]'))return;const b=document.createElement('button');b.className='nav';b.dataset.route=group.id+'/'+group.pages[0].id;b.innerHTML=this.icon(group.icon)+'<span>'+esc(group.title)+'</span>';nav.append(b);};
+ C.prototype.loadRooms=async function(){
+  try{
+   const [areas,devices,entities]=await Promise.all(['config/area_registry/list','config/device_registry/list','config/entity_registry/list'].map(type=>this._hass.callWS({type})));
+   if(!this.isConnected)return;
+   this.excludedEntities=new Set(entities.filter(e=>e.disabled_by||e.hidden_by).map(e=>e.entity_id));
+   const deviceAreas=new Map(devices.map(d=>[d.id,d.area_id]));const grouped=new Map(areas.map(a=>[a.area_id,{name:a.name,states:[]}]));grouped.set('unassigned',{name:'Unassigned',states:[]});
+   for(const e of entities){const s=this._hass.states[e.entity_id];if(!s||this.excludedEntities.has(e.entity_id)||! /^(light|switch|climate|media_player|fan|cover|lock|vacuum)\./.test(e.entity_id))continue;const id=e.area_id||deviceAreas.get(e.device_id)||'unassigned';(grouped.get(id)||grouped.get('unassigned')).states.push(s);}
+   const pages=[...grouped].filter(([,a])=>a.states.length).sort((a,b)=>a[1].name.localeCompare(b[1].name)).map(([id,a])=>({id,title:a.name,cards:c64RoomCards(a.states.sort((a,b)=>(a.attributes.friendly_name||a.entity_id).localeCompare(b.attributes.friendly_name||b.entity_id)))}));
+   const group={id:'rooms',title:'Rooms',icon:'mdi:floor-plan',pages:pages.length?pages:[{id:'setup',title:'Rooms',cards:[{type:'markdown',content:'No room devices found. Assign devices to areas in Home Assistant, then refresh the panel.'}]}]};
+   if(!this.config.groups.some(g=>g.id==='rooms'))this.config.groups.push(group);this.addRoomNavigation(group);this.update();if(location.hash.startsWith('#rooms/'))this.renderPage();
+  }catch{if(!this.isConnected)return;const group={id:'rooms',title:'Rooms',icon:'mdi:floor-plan',pages:[{id:'setup',title:'Rooms',cards:[{type:'markdown',content:'Area information is unavailable for this account. Existing controls still work. Ask your Home Assistant administrator to check access, then refresh.'}]}]};if(!this.config.groups.some(g=>g.id==='rooms'))this.config.groups.push(group);this.addRoomNavigation(group);}
+ };
+ const build=C.prototype.build;C.prototype.build=function(){this.roomsRequested=false;this.healthSignature=null;build.call(this);};
+}
+
+installRoomTools(Commodore64Panel);
+function c64SkyPhase(hass){
+ const sun=hass?.states?.['sun.sun'];if(!sun||!['above_horizon','below_horizon'].includes(sun.state))return 'unknown';
+ const a=sun.attributes||{},e=a.elevation; if(typeof e==='number'&&e>=-6&&e<=6&&typeof a.rising==='boolean')return a.rising?'sunrise':'sunset';
+ return sun.state==='above_horizon'?'day':'night';
+}
+function c64WeatherArt(condition,phase='unknown'){
+ const known=['sunny','clear-night','partlycloudy','cloudy','rainy','pouring','snowy','snowy-rainy','lightning','lightning-rainy','fog','windy','windy-variant','hail','exceptional'];
+ const type=known.includes(condition)?condition:'unknown';
+ const sun='<path fill="#ffe477" d="M13 2h3v5h-3zM2 13h5v3H2zM22 13h5v3h-5zM13 22h3v5h-3zM5 5h4v4H5zM21 5h4v4h-4z"/><path fill="#ffc952" d="M10 8h10v3h3v10h-3v3H10v-3H7V11h3z"/>';
+ const cloud='<path fill="#716bd0" d="M12 13h5V9h12v4h6v5h5v11H6V19h6z"/><path fill="#c3bdff" d="M12 15h7v-4h9v4h6v5h4v6H8v-5h4z"/>';
+ const rain='<path fill="#65bfff" d="M12 31h3v6h-3zM22 33h3v6h-3zM32 31h3v6h-3zM10 40h3v4h-3zM30 40h3v4h-3z"/>';
+ const snow='<path fill="#e2efff" d="M12 32h3v9h-3zM9 35h9v3H9zM29 33h3v9h-3zM26 36h9v3h-9z"/>';
+ const bolt='<path fill="#ffe477" d="M23 25h8l-5 8h6L18 46l4-12h-6z"/>';
+ let art='';
+ if(['sunrise','sunset'].includes(phase)&&['sunny','clear-night'].includes(type))art='<path fill="'+(phase==='sunrise'?'#ffe477':'#ff9977')+'" d="M17 16h14v4h5v15H12V20h5z"/><path fill="#a79aff" d="M5 35h38v3H5zM10 41h28v3H10z"/>';
+ else if(type==='sunny'&&phase!=='night')art='<g transform="translate(8 7)">'+sun+'</g>';
+ else if(type==='clear-night'||type==='sunny')art='<path fill="#e6d9ff" d="M20 5h10v4h-8v8h4v5h9v-4h4v13h-5v6H19v-4h-6V16h3V9h4z"/><path fill="#ffe477" d="M37 5h3v3h-3zM7 9h3v3H7zM39 39h3v3H39z"/>';
+ else if(type==='unknown'||type==='exceptional')art='<path fill="#aaa493" d="M15 8h18v4h4v11h-4v5h-7v7h-5V24h7v-5h4v-6H16v5h-5V12h4zM21 39h5v5h-5z"/>';
+ else{if(type==='partlycloudy')art+=sun;art+=cloud;if(['rainy','pouring','snowy-rainy','lightning-rainy'].includes(type))art+=rain;if(['snowy','snowy-rainy'].includes(type))art+=snow;if(type.startsWith('lightning'))art+=bolt;if(type==='hail')art+='<path fill="#e2efff" d="M12 33h5v5h-5zM29 33h5v5h-5zM21 40h5v5h-5z"/>';if(['fog','windy','windy-variant'].includes(type))art+='<path fill="#a9c7e8" d="M4 32h33v3H4zM10 38h34v3H10zM3 44h24v3H3z"/>';}
+ const sky={sunrise:'#573568',day:'#191964',sunset:'#52244f',night:'#100e30',unknown:'#171344'}[phase];
+ const marker=phase==='night'?'<path fill="#e6d9ff" d="M38 2h5v3h-3v3h5v4h-7V9h-3V5h3z"/>':phase==='unknown'?'':'<path fill="'+(phase==='sunset'?'#ff9977':'#ffe477')+'" d="M37 2h6v2h2v6h-2v2h-6v-2h-2V4h2z"/>';
+ return '<span class="weather-scene"><svg class="pixel-weather" viewBox="0 0 48 48" role="img" aria-label="'+esc((type==='unknown'?'Weather unavailable':condition.replaceAll('-',' '))+' · '+phase)+'" shape-rendering="crispEdges"><path fill="'+sky+'" d="M0 0h48v48H0z"/>'+marker+art+'</svg><small>'+esc({sunrise:'SUNRISE',day:'DAYTIME',sunset:'SUNSET',night:'NIGHT',unknown:'SKY'}[phase])+'</small></span>';
+}
+function c64ClockMarkup(now){const parts=new Intl.DateTimeFormat([],{hour:'numeric',minute:'2-digit',hour12:true}).formatToParts(now);return '<span class="clock-digits">'+esc(parts.filter(p=>['hour','minute','literal'].includes(p.type)).map(p=>p.value).join('').trim())+'</span><small class="clock-period">'+esc(parts.find(p=>p.type==='dayPeriod')?.value||'')+'</small>';}
+
+Commodore64Panel.css+=`.clock{container-type:inline-size;min-width:0}.clock strong{display:flex!important;align-items:baseline;justify-content:center;gap:6px;white-space:nowrap;max-width:100%;font-size:clamp(16px,15cqw,34px)!important;line-height:1.3}.clock-period{font-size:.36em!important;line-height:1;flex:none}.clock-digits{min-width:0}.weather-summary{display:flex;align-items:center;gap:14px}.weather-scene{display:flex;flex-direction:column;align-items:center;gap:5px;flex-shrink:0}.weather-scene small{font:10px monospace}.pixel-weather{width:96px;height:96px;flex:0 0 96px;image-rendering:pixelated}@container panel (max-width:700px){.clock{flex-wrap:wrap}.clock strong{font-size:24px!important}.pixel-weather{width:80px;height:80px;flex-basis:80px}}`;
+Commodore64Panel.css+=`.weather-tile{display:flex;flex-direction:column}.weather-layout{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);align-items:center;gap:12px;flex:1}.weather-layout .weather-scene{width:100%;min-width:0;gap:4px}.weather-layout .pixel-weather{width:100%;height:auto;aspect-ratio:1;flex:none;display:block}.weather-readings{min-width:0}.weather-readings .temperature{font-size:clamp(22px,2.4cqw,34px);line-height:1.4;margin:6px 0}.weather-condition{font:15px/1.4 monospace;text-transform:capitalize;margin:4px 0 10px}.weather-readings .kv{display:flex;flex-wrap:wrap;gap:4px 10px;font:13px monospace}.weather-tile>.outline{margin-top:8px}.weather-layout .weather-scene small{font:11px monospace}@container panel (max-width:700px){.weather-layout{gap:10px;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr)}.weather-readings .temperature{font-size:28px}.weather-readings .metric-label{font-size:10px}}`;
+function installTileDensity(C){
+ const update=C.prototype.update;
+ C.prototype.update=function(){update.call(this);if(!this.built||this.active!=='home')return;const root=this.shadowRoot;
+  for(const row of root.querySelectorAll('.light-row')){const id=row.querySelector('[data-target]')?.dataset.target;const s=this._hass.states[id];const brightness=s?.attributes.brightness;let meter=row.querySelector('.brightness-meter');if(s?.state==='on'&&typeof brightness==='number'&&Number.isFinite(brightness)){if(!meter){meter=document.createElement('div');meter.className='brightness-meter';row.append(meter);}const percent=Math.round(Math.max(0,Math.min(255,brightness))/255*100);meter.setAttribute('role','meter');meter.setAttribute('aria-label','Brightness');meter.setAttribute('aria-valuenow',percent);meter.setAttribute('aria-valuemin','0');meter.setAttribute('aria-valuemax','100');meter.style.setProperty('--level',percent+'%');meter.title='Brightness '+percent+'%';}else meter?.remove();}
+  const weather=root.querySelector('.weather-readings');const humidity=this.state(this.config.weather_entity)?.attributes.humidity;if(weather&&typeof humidity==='number'&&Number.isFinite(humidity)){let bar=weather.querySelector('.humidity-meter');if(!bar){bar=document.createElement('div');bar.className='humidity-meter';weather.append(bar);}bar.style.setProperty('--level',Math.max(0,Math.min(100,humidity))+'%');bar.setAttribute('aria-hidden','true');}
+  const power=this.state(this.config.power_entity),unit=power?.attributes.unit_of_measurement;
+  const numeric=Number(power?.state),watts=unit==='kW'?numeric*1000:numeric;
+  const valid=this.good(this.config.power_entity)&&power.state.trim()!==''&&Number.isFinite(watts)&&['W','kW'].includes(unit);
+  const max=Number(this.config.power_gauge_max_watts)>0?Number(this.config.power_gauge_max_watts):2400;
+  const lit=valid?Math.min(16,Math.max(0,Math.ceil(watts/max*16))):0;
+  const bars=root.querySelector('.bars');if(bars){bars.classList.remove('power-trend');bars.classList.add('rainbow-power');bars.setAttribute('role','img');bars.setAttribute('aria-label',valid?'Current power '+watts.toFixed(1)+' watts; gauge scale '+max+' watts':'Power reading unavailable');bars.removeAttribute('aria-hidden');bars.innerHTML=Array.from({length:16},(_,i)=>'<i style="height:'+(22+i*4)+'%;background:hsl('+(270-i*18)+',85%,60%);opacity:'+(i<lit?'1':'.16')+';box-shadow:'+(i<lit?'0 0 7px currentColor':'none')+';color:hsl('+(270-i*18)+',85%,60%)"></i>').join('');bars.title=valid?watts.toFixed(1)+' W / '+max+' W scale':'Power unavailable';}
+
+ };
+ C.css+=`.overview-grid{align-items:stretch}.overview-grid>.tile{min-height:0;padding:12px;display:flex;flex-direction:column}.tile-head{margin-bottom:8px}.overview-grid>.tile>.outline{margin-top:auto}.light-row{position:relative;min-height:42px;padding-bottom:7px}.brightness-meter{position:absolute;bottom:2px;left:38px;right:0;height:4px;background:linear-gradient(to right,var(--c64-accent,#a29aff) var(--level),#28233f var(--level));image-rendering:pixelated}.humidity-meter{height:10px;margin-top:8px;border:1px solid #7167a4;background:linear-gradient(to right,#78bfff var(--level),#191536 var(--level))}.media-body{flex:1;align-items:center;gap:12px}.album{width:clamp(75px,9cqw,140px);height:clamp(90px,11cqw,160px)}.status-list{flex:1;padding-bottom:8px}.status-list>div{min-height:32px}.power-trend{display:flex;flex-direction:column;justify-content:center;align-items:stretch;height:auto;min-height:100px;flex:1;gap:6px}.power-trend svg{display:block;width:100%;height:90px;min-height:70px}.power-trend small{font:10px/1.5 monospace;color:var(--secondary-text-color)}.transport{margin-top:8px}.camera-tile .camera{flex:1;min-height:190px}.camera img{object-fit:contain}.weather-tile>.outline{margin-top:8px!important}@container panel (max-width:700px){.overview-grid>.tile{padding:10px}.status-list>div{font-size:10px}.media-body{display:flex}.album{display:block;width:90px;height:110px}.track{min-height:0}.camera-tile .camera{min-height:170px}}`;
+}
+
+installTileDensity(Commodore64Panel);
+Commodore64Panel.css+=`@container panel (max-width:700px){
+ .shell{padding:4px}.layout{gap:6px}.bezel{border-width:3px}.mast{padding:7px;gap:7px}.brand{min-width:0;gap:6px;padding:3px 7px}.brand strong{font-size:22px}.brand .rainbow{max-width:70px}.mast-title{padding:5px 7px;font-size:11px;overflow-wrap:anywhere}.appearance-button{min-height:44px;flex:1;font-size:13px!important}.rail{position:sticky;top:0;padding:3px}.rail nav{gap:5px;scrollbar-width:thin;overscroll-behavior-x:contain}.rail .nav{min-height:46px;padding:9px 12px;font:13px monospace}.rail .nav ha-icon{width:20px;height:20px}.rail .switcher{min-height:36px;font:12px monospace}
+ .overview-grid{grid-template-columns:minmax(0,1fr)!important;gap:8px}.overview-grid>.tile{padding:11px}.tile-head button{font-size:13px;min-height:40px}.tile-head{margin-bottom:6px}.light-row{min-height:50px;font:13px monospace;gap:8px}.light-name{font:14px/1.4 monospace;text-align:left;overflow-wrap:anywhere}.bulb{min-width:44px;min-height:44px}.all-off{font:12px monospace;min-height:44px}.outline,.camera-actions button{font:13px monospace;min-height:44px}.transport button{min-height:46px;min-width:46px}.track{font:14px/1.4 monospace;overflow-wrap:anywhere;min-width:0}.track p{margin:6px 0}.media-body{gap:12px}.album{flex:none;width:90px;height:110px}.metric-label,.kv,.weather-summary{font:13px/1.5 monospace}.weather-readings .metric-label{font:12px monospace}.weather-readings .temperature{font-size:clamp(20px,7cqw,28px)}.weather-condition{font-size:14px}.weather-layout{gap:8px}.weather-readings .kv{font-size:12px}.weather-scene small{font-size:11px}.clock{gap:7px;padding:8px;justify-content:space-between}.clock>div{font:11px/1.4 monospace}.clock strong{font-size:26px!important;margin:0}.clock-period{font-size:12px!important}.hero{height:auto;min-height:220px}.hero-text{padding:14px 11px;font:11px/1.7 monospace}.hero-text p{font:12px/1.5 monospace}.memory{font:10px/1.6 monospace}.hardware-specs{font:10px/1.5 monospace}.status-list>div{font:12px/1.5 monospace;min-height:34px}.status-list>div>span:last-child{text-align:right}.camera-caption{font:11px monospace}.camera-actions{gap:7px}.camera-tile .camera{min-height:170px;aspect-ratio:16/9;height:auto}.cards-grid{grid-template-columns:minmax(0,1fr)}.native-frame{padding:4px;border-width:3px}.section-head{padding:10px}.tab{font:13px monospace;min-height:44px}.section-head h1{font:18px monospace;overflow-wrap:anywhere}.favourite-devices{padding:9px;gap:7px}.favourite-devices button{min-height:48px;flex:1 1 130px;overflow-wrap:anywhere}.preference-actions{flex-wrap:wrap}.preferences{padding:12px;max-width:calc(100vw - 16px);max-height:calc(100dvh - 24px)}.preferences button{min-height:46px}.preferences .preference-row{gap:8px}.preferences .device-choices .check{min-height:44px}footer{padding:7px}footer>span{font:9px/1.4 monospace;overflow-wrap:anywhere}
+}`;
+Commodore64Panel.css+=`.rainbow-power{display:flex;flex-direction:row;align-items:flex-end;justify-content:stretch;gap:5px;height:110px;min-height:110px;margin:8px 0;flex:1}.rainbow-power i{flex:1;display:block;max-height:100%;transition:opacity .2s ease}@media(prefers-reduced-motion:reduce){.rainbow-power i{transition:none}}`;
 if(!customElements.get('commodore64-panel'))customElements.define('commodore64-panel',Commodore64Panel);
 window.customCards=window.customCards||[];window.customCards.push({type:'commodore64-panel',name:'Commodore 64 Panel',description:'Commodore 64 dashboard with subsections'});

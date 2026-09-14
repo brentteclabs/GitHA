@@ -14,6 +14,8 @@ Manual fields override discovery. Provide groups to control your sections; omit 
 
 ## Features
 
+- Room pages based on Home Assistant area assignments, with native device controls.
+- Device-health lists for unavailable devices, unknown states, low batteries, open doors/windows and active lights.
 - Personalize panel name, accent colour, compact/spacious layout, and favourite devices.
 - First-run device confirmation for automatic dashboards; optional CRT scanlines and glow.
 - Matching blue-screen controls and metallic subsection frames.
@@ -45,6 +47,7 @@ The original Commodore look is retained, without rainbow strips across card head
 | `optional-frigate-card.yaml` | Optional camera review examples |
 | `docs/CONFIGURATION.md` | Field reference and customization notes |
 | `docs/PERSONALIZATION.md` | First-run setup, favourites, appearance and camera review |
+| `docs/ROOMS-AND-HEALTH.md` | Room grouping, supported controls and status definitions |
 | `docs/AI-CUSTOMIZATION.md` | Instructions and a prompt for an AI assistant |
 | `docs/TROUBLESHOOTING.md` | Common installation problems |
 | `screenshots/` | Desktop and Arcade previews |
@@ -78,12 +81,12 @@ This package was prepared against a Home Assistant 2026-era frontend. Older vers
 
    | URL | Resource type |
    | --- | --- |
-   | `/local/commodore64/commodore64-panel.js?v=github5` | JavaScript Module |
+   | `/local/commodore64/commodore64-panel.js?v=github10` | JavaScript Module |
 
    For YAML-managed resources, use this entry beneath your existing `lovelace.resources` list:
 
    ```yaml
-   - url: /local/commodore64/commodore64-panel.js?v=github5
+   - url: /local/commodore64/commodore64-panel.js?v=github10
      type: module
    ```
 6. Create a **new empty dashboard**. In its raw configuration editor, paste the contents of `dashboard.yaml`.

@@ -1,3 +1,13 @@
+- Restored the live rainbow power gauge and corrected shadow-root click delegation for navigation, entity details and services. Tested the reported navigation buttons and mocked light/media service dispatch.
+
+- Optimized phone layout, enlarged weather art, tightened tile spacing, and added brightness/humidity meters and a real session power trend. Layout fit checked at 320px and 390px.
+
+- Fixed AM/PM clock sizing and added pixel-art weather scenes with sun-based sunrise, daytime, sunset and night graphics.
+
+- Added live appearance preview, validated preference import/export, and reset-as-draft with Cancel protection.
+
+- Added area-based Rooms with native device controls and a Device health section. Verified area overrides, hidden entity exclusion, battery classification and control selection.
+
 - Added Personalize dialog, first-run device confirmation, browser-local favourites, name/accent/layout choices, optional CRT effects, metallic controls, and larger event thumbnails with timeline shortcuts.
 
 - Added automatic entity discovery with manual overrides, a minimal automatic dashboard, a separate manual example, and container-based responsive layouts. Verified at 390px and 1280px.
