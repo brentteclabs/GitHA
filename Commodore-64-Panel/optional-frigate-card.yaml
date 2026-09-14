@@ -10,9 +10,25 @@ recordings_card:
     controls:
       timeline:
         mode: below
+      thumbnails:
+        mode: below
+        size: 200
+        show_details: true
+        show_timeline_control: true
 events_card:
   type: custom:advanced-camera-card
   cameras:
     - camera_entity: camera.example_front_yard
   view:
     default: clips
+  media_gallery:
+    controls:
+      thumbnails:
+        size: 240
+        show_details: true
+        show_timeline_control: true
+  media_viewer:
+    controls:
+      timeline:
+        mode: below
+        show_recordings: true

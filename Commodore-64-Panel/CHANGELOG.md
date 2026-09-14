@@ -1,4 +1,10 @@
+- Added Personalize dialog, first-run device confirmation, browser-local favourites, name/accent/layout choices, optional CRT effects, metallic controls, and larger event thumbnails with timeline shortcuts.
+
+- Added automatic entity discovery with manual overrides, a minimal automatic dashboard, a separate manual example, and container-based responsive layouts. Verified at 390px and 1280px.
+
 # Release notes — 2026-09-13
+
+- Fixed Snake ending on the first move: direction now uses a dedicated field instead of the browser DOM direction property. Verified steering, reverse prevention, food and self-collision.
 
 - Added optional EmulatorJS / VICE library with an empty game catalog.
 - Keep the mouse cursor visible and disallow pointer locking.

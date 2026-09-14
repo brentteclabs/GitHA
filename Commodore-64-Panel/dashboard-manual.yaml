@@ -1,0 +1,94 @@
+title: Commodore 64
+views:
+- title: Home
+  path: home
+  type: panel
+  theme: Commodore 64
+  cards:
+  - type: custom:commodore64-panel
+    title: My Smart Home
+    variant: classic
+    lights:
+    - light.example_living_room
+    - light.example_kitchen
+    - light.example_porch
+    media_entity: media_player.example_speaker
+    weather_entity: weather.example_home
+    camera_entity: camera.example_front_yard
+    power_entity: sensor.example_power
+    energy_entity: sensor.example_energy
+    internet_entity: binary_sensor.example_internet
+    groups:
+    - id: lights
+      title: Lights
+      icon: mdi:lightbulb
+      pages:
+      - id: lighting-fx
+        title: Lighting
+        cards:
+        - type: entities
+          title: Lights
+          entities:
+          - light.example_living_room
+          - light.example_kitchen
+          - light.example_porch
+    - id: security
+      title: Security
+      icon: mdi:cctv
+      pages:
+      - id: recordings
+        title: Cameras
+        cards:
+        - type: picture-entity
+          entity: camera.example_front_yard
+          camera_view: live
+        - type: markdown
+          content: For saved video and a scrubber, install Advanced Camera Card and
+            use the optional example in this package.
+      - id: events
+        title: Event previews
+        cards:
+        - type: markdown
+          content: 'Optional: replace this card with the Advanced Camera Card example
+            to show your own Frigate event thumbnails.'
+    - id: media
+      title: Media
+      icon: mdi:music
+      pages:
+      - id: media
+        title: Music
+        cards:
+        - type: media-control
+          entity: media_player.example_speaker
+    - id: house
+      title: House
+      icon: mdi:home
+      pages:
+      - id: weather
+        title: Weather
+        cards:
+        - type: weather-forecast
+          entity: weather.example_home
+    - id: systems
+      title: Systems
+      icon: mdi:cog
+      pages:
+      - id: power
+        title: Energy
+        cards:
+        - type: entities
+          title: Energy
+          entities:
+          - sensor.example_power
+          - sensor.example_energy
+      - id: status
+        title: Status
+        cards:
+        - type: entities
+          title: Connection
+          entities:
+          - binary_sensor.example_internet
+    cpu_entity: sensor.example_cpu_usage
+    ram_entity: sensor.example_ram_usage
+    cpu_specs: YOUR CPU MODEL / CORES / CLOCK
+    ram_specs: YOUR INSTALLED RAM

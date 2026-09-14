@@ -6,8 +6,18 @@ A Commodore 64-inspired dashboard for Home Assistant: a blue BASIC-style welcome
 
 **Screenshots use demonstration entities and values.** They show the packaged interface, not a live household. Camera images are intentionally omitted; icon rendering in the standalone preview is approximate. Your devices and readings appear after you configure the example entities.
 
+## Automatic setup and screen sizing
+
+The default dashboard.yaml discovers lights, weather, media players, cameras, climate devices, switches, and suitable power/energy sensors from Home Assistant. It fills the available panel width and reflows based on that width, including when the Home Assistant sidebar is open. Small screens scroll naturally rather than shrinking text to fit everything at once.
+
+Manual fields override discovery. Provide groups to control your sections; omit it to generate them. CPU/RAM detection requires recognizable percentage sensors; hardware specifications and recording integrations still need manual configuration. Discovery runs when the panel loads, so refresh after adding devices. Where multiple devices match, selection is deterministic by entity ID, preferring available devices for weather, media and cameras. Set explicit entity fields to select a different device.
+
 ## Features
 
+- Personalize panel name, accent colour, compact/spacious layout, and favourite devices.
+- First-run device confirmation for automatic dashboards; optional CRT scanlines and glow.
+- Matching blue-screen controls and metallic subsection frames.
+- Larger camera event thumbnails with details and timeline shortcuts when Advanced Camera Card is configured.
 - Overview for lights, weather, music, camera access, energy, and system status.
 - Live CPU and RAM percentages, with editable hardware specifications.
 - 12-hour clock and entity-provided measurement units.
@@ -23,7 +33,8 @@ The original Commodore look is retained, without rainbow strips across card head
 
 | File | Purpose |
 | --- | --- |
-| `dashboard.yaml` | Full example dashboard; replace every `example` entity |
+| `dashboard.yaml` | Automatic device discovery dashboard |
+| `dashboard-manual.yaml` | Explicit entity and section configuration example |
 | `themes/commodore64.yaml` | Home Assistant colour theme |
 | `www/commodore64/commodore64-panel.js` | Overview and subsection renderer |
 | `www/commodore64/c64-arcade-card.js` | Optional browser minigames and emulator library launcher |
@@ -33,6 +44,7 @@ The original Commodore look is retained, without rainbow strips across card head
 | `optional-arcade.yaml` | Arcade group to add to the dashboard |
 | `optional-frigate-card.yaml` | Optional camera review examples |
 | `docs/CONFIGURATION.md` | Field reference and customization notes |
+| `docs/PERSONALIZATION.md` | First-run setup, favourites, appearance and camera review |
 | `docs/AI-CUSTOMIZATION.md` | Instructions and a prompt for an AI assistant |
 | `docs/TROUBLESHOOTING.md` | Common installation problems |
 | `screenshots/` | Desktop and Arcade previews |
@@ -66,24 +78,24 @@ This package was prepared against a Home Assistant 2026-era frontend. Older vers
 
    | URL | Resource type |
    | --- | --- |
-   | `/local/commodore64/commodore64-panel.js?v=github1` | JavaScript Module |
+   | `/local/commodore64/commodore64-panel.js?v=github5` | JavaScript Module |
 
    For YAML-managed resources, use this entry beneath your existing `lovelace.resources` list:
 
    ```yaml
-   - url: /local/commodore64/commodore64-panel.js?v=github1
+   - url: /local/commodore64/commodore64-panel.js?v=github5
      type: module
    ```
 6. Create a **new empty dashboard**. In its raw configuration editor, paste the contents of `dashboard.yaml`.
-7. Replace all `example` entity IDs with your own IDs from **Developer Tools → States**. Update both the top-level overview fields and the cards inside `groups`.
+7. The default dashboard discovers your available entities automatically. For explicit device selection, use dashboard-manual.yaml instead. In that manual example, replace all `example` entity IDs with your own IDs from **Developer Tools → States**. Update both the top-level overview fields and the cards inside `groups`.
 8. Save, refresh the browser, and select the **Commodore 64** theme if necessary.
 
 Keep the supplied group/page IDs when changing their display names: overview buttons navigate to those IDs. This installs a separate dashboard; it does not replace Home Assistant's generated Overview or change other dashboards.
 
 ## Add the optional Arcade
 
-1. Add `/local/commodore64/c64-arcade-card.js?v=github2` as another **JavaScript Module** resource.
-2. Copy the object in `optional-arcade.yaml` as an additional item in the main card's `groups` list. Indent it consistently with the existing Lights and Security groups.
+1. Add `/local/commodore64/c64-arcade-card.js?v=github3` as another **JavaScript Module** resource.
+2. For custom sections such as Arcade, start with `dashboard-manual.yaml` and configure its entities. Copy the object in `optional-arcade.yaml` as an additional item in the main card's `groups` list. Indent it consistently with the existing Lights and Security groups.
 3. Refresh and open **Arcade → Games**.
 
 ![Arcade demonstration](screenshots/arcade.png)
